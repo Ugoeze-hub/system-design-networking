@@ -22,5 +22,11 @@ print(f"Server listening on {HOST}:{PORT}")
 conn, addr = server_sock.accept()
 print(f"Connected by {addr}")
 
+data = conn.recv(1024)
+print(f"Received: {data}")
+
+conn.sendall(data)
+print("Echoed back")
+
 conn.close()
 server_sock.close()
