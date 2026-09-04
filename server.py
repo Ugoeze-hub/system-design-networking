@@ -1,9 +1,26 @@
 import socket
+import threading
 from protocol import send_message, recv_message
 
 HOST = 'localhost'
 PORT = 9000
 
+def handle_client(conn, addr):
+    print(f"Connected by {addr}")
+    while True:
+        try:
+            data = recv_message(conn)
+            #data = conn.recv(1024)
+        except ConnectionError:
+            print("Client disconnected")
+            break
+        print(f"Received: {data}")
+        send_message(conn, data)
+        # conn.sendall(data)
+        print("Echoed back")
+
+    conn.close()
+    
 # AF_INET  uses IPv4 addresses
 # SOCK_STREAM uses TCP as opposed to SOCK_DGRAM for UDP)
 server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -20,20 +37,12 @@ server_sock.listen(5)
 
 print(f"Server listening on {HOST}:{PORT}")
 
-conn, addr = server_sock.accept()
-print(f"Connected by {addr}")
-
-while True:
-    try:
-        data = recv_message(conn)
-        #data = conn.recv(1024)
-    except ConnectionError:
-        print("Client disconnected")
-        break
-    print(f"Received: {data}")
-    send_message(conn, data)
-    # conn.sendall(data)
-    print("Echoed back")
-
-conn.close()
-server_sock.close()
+try:
+    while True:
+        conn, addr = server_sock.accept()
+        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread.start()
+except KeyboardInterrupt:
+    print("/nShutting down server...")
+finally:
+    server_sock.close()
