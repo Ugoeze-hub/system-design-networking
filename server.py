@@ -5,20 +5,35 @@ from protocol import send_message, recv_message
 HOST = 'localhost'
 PORT = 9000
 
+clients = []
+clients_lock = threading.Lock()  # shields clients from concurrent read/write chaos
+
+def broadcast(message_bytes):
+    with clients_lock:
+        for client_conn in clients:
+            send_message(client_conn, message_bytes)
+
 def handle_client(conn, addr):
     print(f"Connected by {addr}")
+    
+    with clients_lock:
+        clients.append(conn)
+        
     while True:
         try:
             data = recv_message(conn)
             #data = conn.recv(1024)
         except ConnectionError:
-            print("Client disconnected")
+            print(f"{addr} disconnected (conn: {conn})")
             break
-        print(f"Received: {data}")
-        send_message(conn, data)
+        print(f"Received from {addr}: {data}")
+        broadcast(data)
         # conn.sendall(data)
         print("Echoed back")
 
+    with clients_lock:
+        clients.remove(conn)
+    
     conn.close()
     
 # AF_INET  uses IPv4 addresses
@@ -43,6 +58,6 @@ try:
         thread = threading.Thread(target=handle_client, args=(conn, addr))
         thread.start()
 except KeyboardInterrupt:
-    print("/nShutting down server...")
+    print("\nShutting down server...")
 finally:
     server_sock.close()
