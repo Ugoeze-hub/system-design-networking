@@ -8,10 +8,11 @@ PORT = 9000
 clients = []
 clients_lock = threading.Lock()  # shields clients from concurrent read/write chaos
 
-def broadcast(message_bytes):
+def broadcast(message_bytes, sender_conn):
     with clients_lock:
         for client_conn in clients:
-            send_message(client_conn, message_bytes)
+            if client_conn != sender_conn:
+                send_message(client_conn, message_bytes)
 
 def handle_client(conn, addr):
     print(f"Connected by {addr}")
@@ -27,7 +28,7 @@ def handle_client(conn, addr):
             print(f"{addr} disconnected (conn: {conn})")
             break
         print(f"Received from {addr}: {data}")
-        broadcast(data)
+        broadcast(data, conn)
         # conn.sendall(data)
         print("Echoed back")
 

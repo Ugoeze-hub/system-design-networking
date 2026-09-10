@@ -32,6 +32,7 @@ while True:
     # print("Sent message")
 
     send_message(client_sock, message.encode())
+    print(f"You: {message}")
     # response = recv_message(client_sock)   # ← wait right here, for THIS specific reply
     # print(f"Received: {response}")
 
